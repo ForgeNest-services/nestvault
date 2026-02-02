@@ -1,0 +1,56 @@
+# Express.js + MongoDB + Backblaze B2 + NestVault Example
+# Copy .env.tmpl to .env and fill in your credentials before running
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Express.js Application
+  api:
+    build: ./app
+    ports:
+      - "3000:3000"
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/?authSource=admin
+      MONGO_DATABASE: ${MONGO_DATABASE}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # NestVault - Automated Backup Service
+  nestvault:
+    image: forgenestservices/nestvault:latest
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      DATABASE_TYPE: mongodb
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/?authSource=admin
+      MONGO_DATABASE: ${MONGO_DATABASE}
+
+      # Backblaze B2 Storage configuration
+      STORAGE_TYPE: backblaze
+      B2_KEY_ID: ${B2_KEY_ID}
+      B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
+      B2_BUCKET: ${B2_BUCKET}
+      B2_REGION: ${B2_REGION}
+
+      # Backup schedule and retention
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE}
+      RETENTION_DAYS: ${RETENTION_DAYS}
+      LOG_LEVEL: ${LOG_LEVEL}
+
+volumes:
+  mongodb_data:

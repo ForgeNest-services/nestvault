@@ -1,6 +1,7 @@
 # NestVault
 
-[![Docker Hub](https://img.shields.io/docker/v/forgenestservices/nestvault?label=Docker%20Hub)](https://hub.docker.com/r/forgenestservices/nestvault)
+[![GitHub Release](https://img.shields.io/github/v/release/ForgeNest-services/nestvault)](https://github.com/ForgeNest-services/nestvault/releases)
+[![Docker Image](https://img.shields.io/docker/v/forgenestservices/nestvault?label=Docker)](https://hub.docker.com/r/forgenestservices/nestvault)
 
 Container-native backup utility for PostgreSQL and MongoDB with S3-compatible storage backends.
 
@@ -23,9 +24,13 @@ Container-native backup utility for PostgreSQL and MongoDB with S3-compatible st
 
 ## Quick Start
 
-Pull the image from Docker Hub:
+Pull the image:
 
 ```bash
+# From GitHub Container Registry (recommended)
+docker pull ghcr.io/forgenest-services/nestvault:latest
+
+# Or from Docker Hub
 docker pull forgenestservices/nestvault:latest
 ```
 
@@ -43,7 +48,7 @@ services:
 
   # NestVault backup service
   nestvault:
-    image: forgenestservices/nestvault:latest
+    image: ghcr.io/forgenest-services/nestvault:latest
     environment:
       # Database
       DATABASE_TYPE: postgres

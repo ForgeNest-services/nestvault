@@ -1,0 +1,186 @@
+# NestVault
+
+Container-native backup utility for PostgreSQL and MongoDB with S3-compatible storage backends.
+
+## Features
+
+- **Database Support**: PostgreSQL and MongoDB
+- **Storage Backends**: Amazon S3, Cloudflare R2, Backblaze B2
+- **Scheduled Backups**: Cron-based scheduling (UTC)
+- **Retention Policies**: Automatic cleanup of old backups
+- **Compressed Backups**: All backups are gzip compressed
+- **Docker Native**: Designed for container deployments
+
+## Quick Start
+
+### Docker Compose
+
+```yaml
+services:
+  nestvault:
+    image: nestvault:latest
+    environment:
+      DATABASE_TYPE: postgres
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: mydb
+      PG_USER: myuser
+      PG_PASSWORD: mypassword
+
+      STORAGE_TYPE: s3
+      S3_ACCESS_KEY: your_access_key
+      S3_SECRET_KEY: your_secret_key
+      S3_BUCKET: my-backups
+      S3_REGION: us-east-1
+
+      BACKUP_SCHEDULE: "0 * * * *"  # Every hour
+      RETENTION_DAYS: 7
+```
+
+### Build and Run
+
+```bash
+# Build the image
+docker build -t nestvault .
+
+# Run with environment variables
+docker run -e DATABASE_TYPE=postgres \
+           -e PG_HOST=localhost \
+           -e PG_DATABASE=mydb \
+           ... \
+           nestvault
+```
+
+## Configuration
+
+All configuration is done via environment variables.
+
+### Required Variables
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_TYPE` | Database type: `postgres` or `mongodb` |
+| `STORAGE_TYPE` | Storage backend: `s3`, `r2`, or `backblaze` |
+| `BACKUP_SCHEDULE` | Cron expression for backup schedule (UTC) |
+| `RETENTION_DAYS` | Number of days to retain backups |
+
+### PostgreSQL Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PG_HOST` | PostgreSQL host | Required |
+| `PG_PORT` | PostgreSQL port | `5432` |
+| `PG_DATABASE` | Database name | Required |
+| `PG_USER` | Database user | Required |
+| `PG_PASSWORD` | Database password | Required |
+
+### MongoDB Variables
+
+| Variable | Description |
+|----------|-------------|
+| `MONGO_URI` | MongoDB connection URI |
+| `MONGO_DATABASE` | Database name |
+
+### S3 / R2 Variables
+
+| Variable | Description |
+|----------|-------------|
+| `S3_ACCESS_KEY` | Access key ID |
+| `S3_SECRET_KEY` | Secret access key |
+| `S3_BUCKET` | Bucket name |
+| `S3_REGION` | AWS region |
+| `S3_ENDPOINT` | Custom endpoint URL (required for R2) |
+
+### Backblaze B2 Variables
+
+| Variable | Description |
+|----------|-------------|
+| `B2_KEY_ID` | Application key ID |
+| `B2_APPLICATION_KEY` | Application key |
+| `B2_BUCKET` | Bucket name |
+| `B2_REGION` | B2 region |
+
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LOG_LEVEL` | Logging level | `INFO` |
+
+## Backup Schedule Examples
+
+| Expression | Description |
+|------------|-------------|
+| `0 * * * *` | Every hour |
+| `0 0 * * *` | Daily at midnight |
+| `0 0 * * 0` | Weekly on Sunday |
+| `0 0 1 * *` | Monthly on the 1st |
+| `*/15 * * * *` | Every 15 minutes |
+
+## Backup File Naming
+
+Backups are named using the format:
+```
+{database}_{YYYYMMDD}_{HHMMSS}.{extension}
+```
+
+Examples:
+- PostgreSQL: `mydb_20240115_120000.sql.gz`
+- MongoDB: `mydb_20240115_120000.archive.gz`
+
+## Development
+
+### Setup
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+pip install -e ".[dev]"
+```
+
+### Running Tests
+
+```bash
+pytest tests/
+```
+
+### Local Testing with Docker Compose
+
+```bash
+# Start test databases and MinIO
+docker-compose up -d postgres mongodb minio minio-setup
+
+# Run NestVault for PostgreSQL
+docker-compose up nestvault-postgres
+
+# Run NestVault for MongoDB
+docker-compose up nestvault-mongodb
+```
+
+## Architecture
+
+```
+nestvault/
+├── backup/
+│   ├── base.py       # Abstract backup interface
+│   ├── postgres.py   # PostgreSQL adapter (pg_dump)
+│   └── mongodb.py    # MongoDB adapter (mongodump)
+├── storage/
+│   ├── base.py       # Abstract storage interface
+│   ├── s3.py         # S3 adapter (boto3)
+│   ├── backblaze.py  # Backblaze B2 adapter
+│   └── r2.py         # Cloudflare R2 adapter
+├── config.py         # Environment configuration
+├── scheduler.py      # Cron-based scheduler
+├── retention.py      # Backup retention logic
+├── logging.py        # Structured logging (loguru)
+└── main.py           # Entry point
+```
+
+## License
+
+MIT

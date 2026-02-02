@@ -1,0 +1,2 @@
+[console_scripts]
+nestvault = nestvault.main:main

@@ -8,6 +8,7 @@ This directory contains example applications demonstrating NestVault integration
 |---------|-------|----------|---------|
 | [fastapi-postgres-s3](./fastapi-postgres-s3) | FastAPI (Python) | PostgreSQL | AWS S3 |
 | [express-mongodb-backblaze](./express-mongodb-backblaze) | Express.js (Node.js) | MongoDB | Backblaze B2 |
+| [go-postgres-r2](./go-postgres-r2) | Go (Gin) | PostgreSQL | Cloudflare R2 |
 
 ## Running Examples
 
@@ -38,13 +39,22 @@ examples/
 │       ├── Dockerfile
 │       ├── main.py
 │       └── requirements.txt
-└── express-mongodb-backblaze/
+├── express-mongodb-backblaze/
+│   ├── .env.tmpl
+│   ├── .gitignore
+│   ├── docker-compose.yml
+│   ├── README.md
+│   └── app/
+│       ├── Dockerfile
+│       ├── index.js
+│       └── package.json
+└── go-postgres-r2/
     ├── .env.tmpl
     ├── .gitignore
     ├── docker-compose.yml
     ├── README.md
     └── app/
         ├── Dockerfile
-        ├── index.js
-        └── package.json
+        ├── main.go
+        └── go.mod
 ```

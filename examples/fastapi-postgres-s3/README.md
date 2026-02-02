@@ -1,13 +1,13 @@
-# FastAPI + PostgreSQL + S3 Example
+# FastAPI + PostgreSQL + AWS S3
 
-This example demonstrates how to use **NestVault** to automatically backup a PostgreSQL database used by a FastAPI application to AWS S3.
+Automated PostgreSQL backups to AWS S3 for a FastAPI application using NestVault.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   FastAPI   │────▶│  PostgreSQL │◀────│  NestVault  │
-│   (Todo)    │     │             │     │   Backup    │
+│    :8000    │     │    :5432    │     │   Backup    │
 └─────────────┘     └─────────────┘     └──────┬──────┘
                                                │
                                                ▼
@@ -19,39 +19,36 @@ This example demonstrates how to use **NestVault** to automatically backup a Pos
 ## Quick Start
 
 ```bash
-# 1. Copy the environment template
+# 1. Configure credentials
 cp .env.tmpl .env
+# Edit .env with your AWS S3 credentials
 
-# 2. Edit .env with your credentials
-#    - Set your S3 credentials
-#    - Optionally change database credentials
-
-# 3. Start all services
+# 2. Start services
 docker-compose up -d
 
-# 4. Check NestVault logs
+# 3. Verify backup
 docker-compose logs -f nestvault
 ```
 
 ## Configuration
 
-Copy `.env.tmpl` to `.env` and configure:
+Edit `.env`:
 
 ```bash
-# Database Configuration
+# Database
 POSTGRES_USER=appuser
 POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=tododb
 
-# S3 Configuration
+# AWS S3
 S3_ACCESS_KEY=your_aws_access_key_id
 S3_SECRET_KEY=your_aws_secret_access_key
 S3_BUCKET=your_bucket_name
 S3_REGION=us-east-1
 
-# NestVault Configuration
+# Backup Schedule
 BACKUP_SCHEDULE=0 */6 * * *   # Every 6 hours
-RETENTION_DAYS=7               # Keep backups for 7 days
+RETENTION_DAYS=7
 LOG_LEVEL=INFO
 ```
 
@@ -63,57 +60,62 @@ LOG_LEVEL=INFO
 | postgres | 5432 | PostgreSQL database |
 | nestvault | - | Automated backup service |
 
-## API Endpoints
+## API
 
-- `GET /` - Health check
-- `GET /todos` - List all todos
-- `POST /todos` - Create a todo
-- `GET /todos/{id}` - Get a todo
-- `PUT /todos/{id}` - Update a todo
-- `DELETE /todos/{id}` - Delete a todo
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Health check |
+| GET | `/todos` | List all todos |
+| POST | `/todos` | Create todo |
+| GET | `/todos/{id}` | Get todo |
+| PUT | `/todos/{id}` | Update todo |
+| DELETE | `/todos/{id}` | Delete todo |
+| GET | `/health` | Database health |
 
-## Test the API
+## Test
 
 ```bash
 # Create a todo
 curl -X POST http://localhost:8000/todos \
   -H "Content-Type: application/json" \
-  -d '{"title": "Learn NestVault", "completed": false}'
+  -d '{"title": "Test backup", "completed": false}'
 
 # List todos
 curl http://localhost:8000/todos
+
+# Check health
+curl http://localhost:8000/health
 ```
 
-## Backup Schedule
+## Verify Backup
 
-NestVault is configured to:
-- Backup every 6 hours (`0 */6 * * *`)
-- Retain backups for 7 days
+1. Check NestVault logs:
+   ```bash
+   docker-compose logs nestvault
+   ```
 
-Backups are stored in your S3 bucket with naming format:
-```
-tododb_20240115_120000.sql.gz
-```
+2. Look for successful upload message:
+   ```
+   [INFO] [storage.s3] Upload completed: tododb_20260202_124557.sql.gz
+   ```
 
-## Trigger Immediate Backup
+3. Check your S3 bucket in AWS Console
 
-To test backup immediately, restart the nestvault service:
+## Commands
+
 ```bash
-docker-compose restart nestvault
-```
+# Start
+docker-compose up -d
 
-## View Logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# NestVault only
+# View logs
 docker-compose logs -f nestvault
-```
 
-## Cleanup
+# Trigger immediate backup
+docker-compose restart nestvault
 
-```bash
-docker-compose down -v  # Remove containers and volumes
+# Stop
+docker-compose down
+
+# Stop and delete data
+docker-compose down -v
 ```

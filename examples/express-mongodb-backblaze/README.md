@@ -1,13 +1,13 @@
-# Express.js + MongoDB + Backblaze B2 Example
+# Express.js + MongoDB + Backblaze B2
 
-This example demonstrates how to use **NestVault** to automatically backup a MongoDB database used by an Express.js application to Backblaze B2.
+Automated MongoDB backups to Backblaze B2 for an Express.js application using NestVault.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │  Express.js │────▶│   MongoDB   │◀────│  NestVault  │
-│   (Todo)    │     │             │     │   Backup    │
+│    :3000    │     │   :27017    │     │   Backup    │
 └─────────────┘     └─────────────┘     └──────┬──────┘
                                                │
                                                ▼
@@ -20,39 +20,36 @@ This example demonstrates how to use **NestVault** to automatically backup a Mon
 ## Quick Start
 
 ```bash
-# 1. Copy the environment template
+# 1. Configure credentials
 cp .env.tmpl .env
+# Edit .env with your Backblaze B2 credentials
 
-# 2. Edit .env with your credentials
-#    - Set your Backblaze B2 credentials
-#    - Optionally change database credentials
-
-# 3. Start all services
+# 2. Start services
 docker-compose up -d
 
-# 4. Check NestVault logs
+# 3. Verify backup
 docker-compose logs -f nestvault
 ```
 
 ## Configuration
 
-Copy `.env.tmpl` to `.env` and configure:
+Edit `.env`:
 
 ```bash
-# Database Configuration
+# Database
 MONGO_ROOT_USER=appuser
 MONGO_ROOT_PASSWORD=your_secure_password
 MONGO_DATABASE=tododb
 
-# Backblaze B2 Configuration
+# Backblaze B2
 B2_KEY_ID=your_b2_key_id
 B2_APPLICATION_KEY=your_b2_application_key
 B2_BUCKET=your_bucket_name
 B2_REGION=us-east-005
 
-# NestVault Configuration
+# Backup Schedule
 BACKUP_SCHEDULE=0 */6 * * *   # Every 6 hours
-RETENTION_DAYS=7               # Keep backups for 7 days
+RETENTION_DAYS=7
 LOG_LEVEL=INFO
 ```
 
@@ -64,57 +61,70 @@ LOG_LEVEL=INFO
 | mongodb | 27017 | MongoDB database |
 | nestvault | - | Automated backup service |
 
-## API Endpoints
+## API
 
-- `GET /` - Health check
-- `GET /todos` - List all todos
-- `POST /todos` - Create a todo
-- `GET /todos/:id` - Get a todo
-- `PUT /todos/:id` - Update a todo
-- `DELETE /todos/:id` - Delete a todo
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Health check |
+| GET | `/todos` | List all todos |
+| POST | `/todos` | Create todo |
+| GET | `/todos/:id` | Get todo |
+| PUT | `/todos/:id` | Update todo |
+| DELETE | `/todos/:id` | Delete todo |
+| GET | `/health` | Database health |
 
-## Test the API
+## Test
 
 ```bash
 # Create a todo
 curl -X POST http://localhost:3000/todos \
   -H "Content-Type: application/json" \
-  -d '{"title": "Learn NestVault", "completed": false}'
+  -d '{"title": "Test backup", "completed": false}'
 
 # List todos
 curl http://localhost:3000/todos
+
+# Check health
+curl http://localhost:3000/health
 ```
 
-## Backup Schedule
+## Verify Backup
 
-NestVault is configured to:
-- Backup every 6 hours (`0 */6 * * *`)
-- Retain backups for 7 days
+1. Check NestVault logs:
+   ```bash
+   docker-compose logs nestvault
+   ```
 
-Backups are stored in your Backblaze B2 bucket with naming format:
-```
-tododb_20240115_120000.archive.gz
-```
+2. Look for successful upload message:
+   ```
+   [INFO] [storage.backblaze] Upload completed: tododb_20260202_125444.archive.gz
+   ```
 
-## Trigger Immediate Backup
+3. Check your bucket in Backblaze B2 Console
 
-To test backup immediately, restart the nestvault service:
+## Commands
+
 ```bash
-docker-compose restart nestvault
-```
+# Start
+docker-compose up -d
 
-## View Logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# NestVault only
+# View logs
 docker-compose logs -f nestvault
+
+# Trigger immediate backup
+docker-compose restart nestvault
+
+# Stop
+docker-compose down
+
+# Stop and delete data
+docker-compose down -v
 ```
 
-## Cleanup
+## Troubleshooting
 
-```bash
-docker-compose down -v  # Remove containers and volumes
-```
+### Authentication Failed
+Ensure `?authSource=admin` is in the MongoDB URI. This is already configured in `docker-compose.yml`.
+
+### B2 Upload Failed
+Verify your B2 Application Key has write access to the bucket.

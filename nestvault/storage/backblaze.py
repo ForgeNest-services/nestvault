@@ -1,5 +1,7 @@
 """Backblaze B2 storage adapter using b2sdk."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from b2sdk.v2 import B2Api, InMemoryAccountInfo

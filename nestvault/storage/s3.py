@@ -1,5 +1,7 @@
 """S3 storage adapter using boto3."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import boto3

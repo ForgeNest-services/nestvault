@@ -1,5 +1,7 @@
 """Cron-based backup scheduler."""
 
+from __future__ import annotations
+
 import tempfile
 import time
 from datetime import datetime, timezone

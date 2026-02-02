@@ -6,12 +6,12 @@ LABEL description="Container-native backup utility for PostgreSQL and MongoDB"
 # Install database client tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
-    gnupg \
     curl \
-    && curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/mongodb-archive-keyring.gpg] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    mongodb-database-tools \
+    && curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-debian12-x86_64-100.10.0.tgz \
+    -o /tmp/mongodb-tools.tgz \
+    && tar -xzf /tmp/mongodb-tools.tgz -C /tmp \
+    && mv /tmp/mongodb-database-tools-*/bin/* /usr/local/bin/ \
+    && rm -rf /tmp/mongodb-* \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

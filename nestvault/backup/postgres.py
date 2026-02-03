@@ -90,3 +90,51 @@ class PostgresBackupAdapter(BackupAdapter):
         except OSError as e:
             logger.error(f"Failed to write backup file: {e}")
             raise BackupError(f"Failed to write backup file: {e}")
+
+    def restore(self, backup_file: Path) -> None:
+        """Restore a PostgreSQL database from a backup file.
+
+        Args:
+            backup_file: Path to the backup file (.sql.gz)
+
+        Raises:
+            BackupError: If the restore operation fails
+        """
+        logger.info(f"Starting PostgreSQL restore for database '{self.database_name}'")
+        logger.info(f"Restoring from: {backup_file}")
+
+        env = {
+            "PGPASSWORD": self.config.password,
+        }
+
+        cmd = [
+            "psql",
+            "-h", self.config.host,
+            "-p", str(self.config.port),
+            "-U", self.config.user,
+            "-d", self.config.database,
+            "--no-password",
+        ]
+
+        try:
+            logger.debug("Decompressing and executing restore")
+            with gzip.open(backup_file, "rb") as f:
+                sql_content = f.read()
+
+            result = subprocess.run(
+                cmd,
+                env=env,
+                input=sql_content,
+                capture_output=True,
+                check=True,
+            )
+
+            logger.info(f"Restore completed successfully for database '{self.database_name}'")
+
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode() if e.stderr else str(e)
+            logger.error(f"psql restore failed: {error_msg}")
+            raise BackupError(f"PostgreSQL restore failed: {error_msg}")
+        except OSError as e:
+            logger.error(f"Failed to read backup file: {e}")
+            raise BackupError(f"Failed to read backup file: {e}")

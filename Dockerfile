@@ -35,4 +35,5 @@ RUN pip install --no-cache-dir -e .
 USER nestvault
 
 # Run the application
-CMD ["nestvault"]
+ENTRYPOINT ["nestvault"]
+CMD []

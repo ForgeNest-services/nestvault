@@ -175,6 +175,78 @@ Backups are named using the format:
 5. **Cleanup**: Deletes backups older than `RETENTION_DAYS`
 6. **Repeat**: Waits for the next scheduled backup
 
+## Restoring Backups
+
+NestVault supports restoring backups when migrating to a new server or recovering from data loss.
+
+### List Available Backups
+
+```bash
+docker run --rm \
+  -e DATABASE_TYPE=postgres \
+  -e PG_HOST=your-db-host \
+  -e PG_PORT=5432 \
+  -e PG_DATABASE=mydb \
+  -e PG_USER=myuser \
+  -e PG_PASSWORD=mypassword \
+  -e STORAGE_TYPE=s3 \
+  -e S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
+  -e S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY} \
+  -e S3_BUCKET=my-backups \
+  -e S3_REGION=us-east-1 \
+  -e BACKUP_SCHEDULE="0 0 * * *" \
+  -e RETENTION_DAYS=7 \
+  ghcr.io/forgenest-services/nestvault:latest restore --list
+```
+
+### Restore Latest Backup
+
+```bash
+docker run --rm \
+  -e DATABASE_TYPE=postgres \
+  -e PG_HOST=your-db-host \
+  -e PG_PORT=5432 \
+  -e PG_DATABASE=mydb \
+  -e PG_USER=myuser \
+  -e PG_PASSWORD=mypassword \
+  -e STORAGE_TYPE=s3 \
+  -e S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
+  -e S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY} \
+  -e S3_BUCKET=my-backups \
+  -e S3_REGION=us-east-1 \
+  -e BACKUP_SCHEDULE="0 0 * * *" \
+  -e RETENTION_DAYS=7 \
+  ghcr.io/forgenest-services/nestvault:latest restore
+```
+
+### Restore Specific Backup
+
+```bash
+docker run --rm \
+  -e DATABASE_TYPE=postgres \
+  -e PG_HOST=your-db-host \
+  -e PG_PORT=5432 \
+  -e PG_DATABASE=mydb \
+  -e PG_USER=myuser \
+  -e PG_PASSWORD=mypassword \
+  -e STORAGE_TYPE=s3 \
+  -e S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
+  -e S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY} \
+  -e S3_BUCKET=my-backups \
+  -e S3_REGION=us-east-1 \
+  -e BACKUP_SCHEDULE="0 0 * * *" \
+  -e RETENTION_DAYS=7 \
+  ghcr.io/forgenest-services/nestvault:latest restore --backup mydb_20240115_120000.sql.gz
+```
+
+### Restore Commands
+
+| Command | Description |
+|---------|-------------|
+| `restore --list` | List all available backups |
+| `restore` | Restore the most recent backup |
+| `restore --backup <filename>` | Restore a specific backup file |
+
 ## Development
 
 ### Setup
@@ -209,15 +281,17 @@ docker build -t nestvault .
 nestvault/
 ├── backup/
 │   ├── base.py       # Abstract backup interface
-│   ├── postgres.py   # PostgreSQL adapter (pg_dump)
-│   └── mongodb.py    # MongoDB adapter (mongodump)
+│   ├── postgres.py   # PostgreSQL adapter (pg_dump/psql)
+│   └── mongodb.py    # MongoDB adapter (mongodump/mongorestore)
 ├── storage/
 │   ├── base.py       # Abstract storage interface
 │   ├── s3.py         # S3/R2 adapter (boto3)
 │   └── backblaze.py  # Backblaze B2 adapter (b2sdk)
+├── cli.py            # Command line argument parsing
 ├── config.py         # Environment configuration
 ├── scheduler.py      # Cron-based scheduler
 ├── retention.py      # Backup retention logic
+├── restore.py        # Backup restore functionality
 ├── logging.py        # Structured logging (loguru)
 └── main.py           # Entry point
 ```

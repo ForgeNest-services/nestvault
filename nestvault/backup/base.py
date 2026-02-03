@@ -22,6 +22,18 @@ class BackupAdapter(ABC):
         """
         pass
 
+    @abstractmethod
+    def restore(self, backup_file: Path) -> None:
+        """Restore a database from a backup file.
+
+        Args:
+            backup_file: Path to the backup file (compressed)
+
+        Raises:
+            BackupError: If the restore operation fails
+        """
+        pass
+
     @property
     @abstractmethod
     def database_name(self) -> str:

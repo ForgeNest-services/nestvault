@@ -136,3 +136,23 @@ class BackblazeStorageAdapter(StorageAdapter):
             self.delete(key)
 
         logger.info(f"Deleted {len(remote_keys)} objects")
+
+    def download(self, remote_key: str, local_path: Path) -> None:
+        """Download a file from Backblaze B2.
+
+        Args:
+            remote_key: Key/path of the object in the B2 bucket
+            local_path: Local path to save the downloaded file
+
+        Raises:
+            StorageError: If the download fails
+        """
+        logger.info(f"Downloading b2://{self.config.bucket}/{remote_key} to {local_path}")
+
+        try:
+            downloaded_file = self.bucket.download_file_by_name(remote_key)
+            downloaded_file.save_to(str(local_path))
+            logger.info(f"Download completed: {local_path}")
+        except B2Error as e:
+            logger.error(f"B2 download failed: {e}")
+            raise StorageError(f"Failed to download from Backblaze B2: {e}")

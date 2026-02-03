@@ -83,3 +83,39 @@ class MongoDBBackupAdapter(BackupAdapter):
         except OSError as e:
             logger.error(f"Failed to write backup file: {e}")
             raise BackupError(f"Failed to write backup file: {e}")
+
+    def restore(self, backup_file: Path) -> None:
+        """Restore a MongoDB database from a backup file.
+
+        Args:
+            backup_file: Path to the backup file (.archive.gz)
+
+        Raises:
+            BackupError: If the restore operation fails
+        """
+        logger.info(f"Starting MongoDB restore for database '{self.database_name}'")
+        logger.info(f"Restoring from: {backup_file}")
+
+        cmd = [
+            "mongorestore",
+            "--uri", self.config.uri,
+            "--db", self.config.database,
+            "--archive=" + str(backup_file),
+            "--gzip",
+            "--drop",  # Drop existing collections before restoring
+        ]
+
+        try:
+            logger.debug("Executing mongorestore command")
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                check=True,
+            )
+
+            logger.info(f"Restore completed successfully for database '{self.database_name}'")
+
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode() if e.stderr else str(e)
+            logger.error(f"mongorestore failed: {error_msg}")
+            raise BackupError(f"MongoDB restore failed: {error_msg}")

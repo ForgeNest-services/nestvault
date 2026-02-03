@@ -139,3 +139,22 @@ class S3StorageAdapter(StorageAdapter):
         except (BotoCoreError, ClientError) as e:
             logger.error(f"S3 bulk delete failed: {e}")
             raise StorageError(f"Failed to delete S3 objects: {e}")
+
+    def download(self, remote_key: str, local_path: Path) -> None:
+        """Download a file from S3.
+
+        Args:
+            remote_key: Key/path of the object in the S3 bucket
+            local_path: Local path to save the downloaded file
+
+        Raises:
+            StorageError: If the download fails
+        """
+        logger.info(f"Downloading s3://{self.bucket}/{remote_key} to {local_path}")
+
+        try:
+            self.client.download_file(self.bucket, remote_key, str(local_path))
+            logger.info(f"Download completed: {local_path}")
+        except (BotoCoreError, ClientError) as e:
+            logger.error(f"S3 download failed: {e}")
+            raise StorageError(f"Failed to download from S3: {e}")

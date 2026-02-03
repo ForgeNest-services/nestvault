@@ -71,3 +71,16 @@ class StorageAdapter(ABC):
             StorageError: If deletion fails
         """
         pass
+
+    @abstractmethod
+    def download(self, remote_key: str, local_path: Path) -> None:
+        """Download an object from storage.
+
+        Args:
+            remote_key: Key/path of the object to download
+            local_path: Local path to save the downloaded file
+
+        Raises:
+            StorageError: If download fails
+        """
+        pass

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from typing import Literal
+from urllib.parse import urlparse, unquote
 
 from croniter import croniter
 
@@ -105,8 +107,50 @@ def _validate_cron(expression: str) -> None:
         raise ConfigError(f"Invalid cron expression '{expression}': {e}")
 
 
+def _parse_database_url(url: str) -> PostgresConfig:
+    """Parse a DATABASE_URL into PostgresConfig.
+
+    Supports formats:
+        postgresql://user:password@host:port/database
+        postgres://user:password@host:port/database
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ("postgresql", "postgres"):
+        raise ConfigError(f"Invalid DATABASE_URL scheme: {parsed.scheme}. Must be 'postgresql' or 'postgres'")
+
+    if not parsed.hostname:
+        raise ConfigError("DATABASE_URL missing hostname")
+    if not parsed.username:
+        raise ConfigError("DATABASE_URL missing username")
+    if not parsed.password:
+        raise ConfigError("DATABASE_URL missing password")
+    if not parsed.path or parsed.path == "/":
+        raise ConfigError("DATABASE_URL missing database name")
+
+    database = parsed.path.lstrip("/")
+
+    return PostgresConfig(
+        host=parsed.hostname,
+        port=parsed.port or 5432,
+        database=unquote(database),
+        user=unquote(parsed.username),
+        password=unquote(parsed.password),
+    )
+
+
 def _load_postgres_config() -> PostgresConfig:
-    """Load PostgreSQL configuration from environment."""
+    """Load PostgreSQL configuration from environment.
+
+    Supports two modes:
+        1. DATABASE_URL - single connection string (preferred)
+        2. Separate PG_* variables - legacy/explicit mode
+    """
+    database_url = _get_optional_env("DATABASE_URL")
+
+    if database_url:
+        return _parse_database_url(database_url)
+
     return PostgresConfig(
         host=_get_required_env("PG_HOST"),
         port=_get_int_env("PG_PORT", 5432),
@@ -116,8 +160,40 @@ def _load_postgres_config() -> PostgresConfig:
     )
 
 
+def _parse_mongodb_url(url: str) -> MongoDBConfig:
+    """Parse a DATABASE_URL into MongoDBConfig.
+
+    Supports format:
+        mongodb://user:password@host:port/database?authSource=admin
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ("mongodb", "mongodb+srv"):
+        raise ConfigError(f"Invalid DATABASE_URL scheme: {parsed.scheme}. Must be 'mongodb' or 'mongodb+srv'")
+
+    if not parsed.path or parsed.path == "/":
+        raise ConfigError("DATABASE_URL missing database name")
+
+    database = parsed.path.lstrip("/").split("?")[0]
+
+    return MongoDBConfig(
+        uri=url,
+        database=database,
+    )
+
+
 def _load_mongodb_config() -> MongoDBConfig:
-    """Load MongoDB configuration from environment."""
+    """Load MongoDB configuration from environment.
+
+    Supports two modes:
+        1. DATABASE_URL - single connection string (preferred)
+        2. Separate MONGO_URI + MONGO_DATABASE - legacy/explicit mode
+    """
+    database_url = _get_optional_env("DATABASE_URL")
+
+    if database_url:
+        return _parse_mongodb_url(database_url)
+
     return MongoDBConfig(
         uri=_get_required_env("MONGO_URI"),
         database=_get_required_env("MONGO_DATABASE"),

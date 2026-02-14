@@ -50,13 +50,9 @@ services:
   nestvault:
     image: ghcr.io/forgenest-services/nestvault:latest
     environment:
-      # Database
+      # Database (using DATABASE_URL - same as your app)
       DATABASE_TYPE: postgres
-      PG_HOST: postgres
-      PG_PORT: 5432
-      PG_DATABASE: mydb
-      PG_USER: myuser
-      PG_PASSWORD: mypassword
+      DATABASE_URL: postgresql://myuser:mypassword@postgres:5432/mydb
 
       # Storage (AWS S3)
       STORAGE_TYPE: s3
@@ -69,6 +65,8 @@ services:
       BACKUP_SCHEDULE: "0 */6 * * *"  # Every 6 hours
       RETENTION_DAYS: 7
 ```
+
+> **Note:** You can use `DATABASE_URL` (recommended) or separate variables (`PG_HOST`, `PG_USER`, etc.). Using `DATABASE_URL` avoids duplicating credentials when your app already uses it.
 
 ## Examples
 
@@ -95,6 +93,14 @@ All configuration is done via environment variables.
 
 ### PostgreSQL
 
+**Option 1: DATABASE_URL (Recommended)**
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Connection string: `postgresql://user:password@host:port/database` |
+
+**Option 2: Separate Variables**
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PG_HOST` | Database host | Required |
@@ -104,6 +110,14 @@ All configuration is done via environment variables.
 | `PG_PASSWORD` | Password | Required |
 
 ### MongoDB
+
+**Option 1: DATABASE_URL (Recommended)**
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Connection string: `mongodb://user:pass@host:27017/database?authSource=admin` |
+
+**Option 2: Separate Variables**
 
 | Variable | Description |
 |----------|-------------|
